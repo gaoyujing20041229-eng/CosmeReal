@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CosmReal — 圖像辨識</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Serif+TC:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Tesseract.js -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <style>
+        body {
+            background: #f7f4ee;
+            color: #333;
+            font-family: "Noto Serif TC", serif;
+        }
+
+        .navbar {
+            background: #dfe6dc;
+        }
+
+        .navbar-brand {
+            font-family: "Playfair Display", serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--ink) !important;
+        }
+
+        .page-title {
+            font-family: "Playfair Display", serif;
+            font-size: 42px;
+            margin-top: 50px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #777;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .preview-box {
+            min-height: 300px;
+            border: 2px dashed #c8cec5;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #fafaf8;
+            overflow: hidden;
+        }
+
+        #previewImage {
+            max-width: 100%;
+            max-height: 400px;
+            display: none;
+        }
+
+        .btn-main {
+            background: #879b84;
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 10px;
+        }
+
+        .btn-main:hover {
+            background: #71866f;
+            color: white;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 180px;
+        }
+
+        .ingredient-item {
+            background: #f3f5f1;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .ingredient-name {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .ingredient-zh {
+            color: #777;
+            margin-left: 8px;
+        }
+
+        .effect {
+            color: #6f806d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        footer {
+            margin-top: 80px;
+            padding: 30px 0;
+            background: #dfe6dc;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+
+        <a class="navbar-brand" href="/">
+            CosmReal
+        </a>
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+
+            <ul class="navbar-nav ms-auto">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/" style="color: var(--sage-dark);">首頁</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/product-search" style="color: var(--sage-dark);">商品查詢</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/features" style="color: var(--sage-dark);">功能介紹</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/personal" style="color: var(--sage-dark);">個人分析</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link active" href="/ocr" style="color: var(--sage-dark);">圖像辨識</a>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+</nav>
+
+
+<!-- Main -->
+<div class="container">
+
+    <div class="text-center">
+        <h1 class="page-title">圖像辨識</h1>
+        <p class="subtitle">
+            上傳化妝品成分標示，辨識其中的成分並進行分析
+        </p>
+    </div>
+
+
+    <!-- Upload -->
+    <div class="card p-4 mb-4">
+
+        <h4 class="mb-3">① 上傳成分圖片</h4>
+
+        <input
+            type="file"
+            id="imageInput"
+            class="form-control mb-4"
+            accept="image/*"
+        >
+
+        <div class="preview-box">
+            <span id="previewText">
+                尚未選擇圖片
+            </span>
+
+            <img
+                id="previewImage"
+                alt="圖片預覽"
+            >
+        </div>
+
+        <div class="text-center mt-4">
+
+            <button
+                id="recognizeButton"
+                class="btn btn-main"
+                disabled
+            >
+                開始辨識
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- OCR Result -->
+    <div class="card p-4 mb-4">
+
+        <h4 class="mb-3">② OCR 辨識結果</h4>
+
+        <textarea
+            id="ocrText"
+            class="form-control"
+            placeholder="辨識結果會顯示在這裡..."
+        ></textarea>
+
+        <div class="text-center mt-4">
+
+            <button
+                id="splitButton"
+                class="btn btn-main"
+                disabled
+            >
+                整理成分
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- Ingredient Result -->
+    <div class="card p-4 mb-4">
+
+        <h4 class="mb-3">③ 成分分析</h4>
+
+        <div id="ingredientList">
+            <p class="text-muted">
+                尚未整理成分
+            </p>
+        </div>
+
+        <div class="text-center mt-4">
+
+            <button
+                id="viewResultButton"
+                class="btn btn-main"
+                style="display:none;"
+            >
+                查看分析結果
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer>
+    <div>
+        CosmReal — 化妝品成分知識查詢與分析系統
+    </div>
+</footer>
+
+
+<script>
+    console.log("OCR JavaScript 開始執行");
+    /* =========================================================
+       1. DOM 元素
+    ========================================================= */
+
+    const imageInput = document.getElementById("imageInput");
+    const previewImage = document.getElementById("previewImage");
+    const previewText = document.getElementById("previewText");
+
+    const recognizeButton = document.getElementById("recognizeButton");
+    const ocrText = document.getElementById("ocrText");
+
+    const splitButton = document.getElementById("splitButton");
+    const ingredientList = document.getElementById("ingredientList");
+
+    const viewResultButton = document.getElementById("viewResultButton");
+
+    /* =========================================================
+       2. 暫存 OCR 辨識結果
+    ========================================================= */
+
+    let currentMatchResults = [];
+
+    /* =========================================================
+       3. 圖片上傳
+    ========================================================= */
+
+    imageInput.addEventListener("change", function () {
+        const file = imageInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            previewImage.src = event.target.result;
+            previewImage.style.display = "block";
+
+            previewText.style.display = "none";
+
+            recognizeButton.disabled = false;
+
+            // 保存圖片，之後如果需要可以使用
+            sessionStorage.setItem("ocrImage", event.target.result);
+            sessionStorage.setItem("ocrImageName", file.name);
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+    /* =========================================================
+       4. 圖片預處理
+    ========================================================= */
+
+    function preprocessImage(imageSrc) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+
+            img.onload = function () {
+                const canvas = document.createElement("canvas");
+
+                const scale = Math.min(
+                    2000 / img.width,
+                    2000 / img.height,
+                    1.5
+                );
+
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                const ctx = canvas.getContext("2d");
+
+                ctx.drawImage(
+                    img,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+                const imageData = ctx.getImageData(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+                const data = imageData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray =
+                        0.299 * data[i] +
+                        0.587 * data[i + 1] +
+                        0.114 * data[i + 2];
+
+                    const contrast = 1.6;
+                    let value = ((gray - 128) * contrast) + 128;
+
+                    value = Math.max(0, Math.min(255, value));
+
+                    data[i] = value;
+                    data[i + 1] = value;
+                    data[i + 2] = value;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                resolve(canvas.toDataURL("image/png"));
+            };
+
+            img.onerror = reject;
+            img.src = imageSrc;
+        });
+    }
+
+    /* =========================================================
+       5. OCR 辨識
+    ========================================================= */
+
+    recognizeButton.addEventListener("click", async function () {
+        const imageSrc = sessionStorage.getItem("ocrImage");
+
+        if (!imageSrc) {
+            alert("請先上傳圖片");
+            return;
+        }
+
+        recognizeButton.disabled = true;
+        recognizeButton.innerText = "辨識中...";
+
+        try {
+            const processedImage = await preprocessImage(imageSrc);
+
+            const worker = await Tesseract.createWorker(["eng", "chi_tra"], 1, {
+                logger: function (info) {
+                    if (info.status === "recognizing text") {
+                        const progress = Math.round(info.progress * 100);
+                        recognizeButton.innerText = `辨識中 ${progress}%`;
+                    }
+                }
+            });
+
+            await worker.setParameters({
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                preserve_interword_spaces: "1"
+            });
+
+            /* ---------- 第一次：處理後圖片 ---------- */
+            const result1 = await worker.recognize(processedImage);
+            const text1 = result1.data.text || "";
+            const confidence1 = result1.data.confidence || 0;
+
+            /* ---------- 如果結果不好，重新辨識原圖 ---------- */
+            let finalText = text1;
+
+            if (text1.trim().length < 30 || confidence1 < 70) {
+                const result2 = await worker.recognize(imageSrc);
+                const text2 = result2.data.text || "";
+                finalText = mergeOcrTexts(text1, text2);
+            }
+
+            await worker.terminate();
+
+            ocrText.value = finalText.trim();
+            console.log("========== OCR 完成 ==========");
+            console.log("OCR結果：", finalText);
+            console.log("準備解除整理按鈕 disabled");
+            splitButton.disabled = false;
+            recognizeButton.innerText = "重新辨識";
+        } catch (error) {
+            console.error("OCR error:", error);
+            alert("圖片辨識失敗，請查看瀏覽器 Console。");
+            recognizeButton.innerText = "開始辨識";
+        } finally {
+            recognizeButton.disabled = false;
+        }
+    });
+
+    /* =========================================================
+       6. 合併 OCR 結果
+    ========================================================= */
+
+    function mergeOcrTexts(text1, text2) {
+        const lines = [];
+
+        const addLines = function (text) {
+            text
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .forEach(line => {
+                    if (!lines.includes(line)) {
+                        lines.push(line);
+                    }
+                });
+        };
+
+        addLines(text1);
+        addLines(text2);
+
+        return lines.join("\n");
+    }
+
+    /* =========================================================
+       7. 整理 OCR 成分
+
+       這裡已經不使用 mockIngredients。
+
+       會直接呼叫：
+       /api/ingredients/search
+    ========================================================= */
+
+    splitButton.addEventListener("click", async function () {
+        console.log("========== 整理成分按鈕被點擊 ==========");
+
+        const text = ocrText.value.trim();
+        console.log("OCR文字：", text);
+
+        if (!text) {
+            alert("目前沒有 OCR 文字");
+            return;
+        }
+        splitButton.disabled = false;
+        splitButton.innerText = "整理中...";
+        ingredientList.innerHTML = "";
+
+        /* -------------------------------------------------
+           將 OCR 文字拆成不同成分
+        ------------------------------------------------- */
+        const ingredientTexts = text
+            .replace(/[，、；;]/g, ",")
+            .split(/[,\n]+/)
+            .map(item => item.trim())
+            .filter(item => item.length > 0);
+
+        currentMatchResults = [];
+
+        /* -------------------------------------------------
+           一個一個查詢 Beauty Real API
+        ------------------------------------------------- */
+        for (const ingredientText of ingredientTexts) {
+            try {
+                console.log("正在查詢 API：", ingredientText);
+                const response = await fetch(
+                    `/api/ingredients/search?q=${encodeURIComponent(ingredientText)}`
+                );
+
+                if (!response.ok) {
+                    console.log(`找不到成分：${ingredientText}`);
+                    continue;
+                }
+
+                const data = await response.json();
+                console.log("API 回傳：", data);
+
+                if (!data.ingredients || data.ingredients.length === 0) {
+                    continue;
+                }
+
+                /*
+                 * 目前先使用 API 回傳的第一筆結果。
+                 * 後面再加入更精確的模糊比對。
+                 */
+                const ingredient = data.ingredients[0];
+
+                currentMatchResults.push({
+                    ingredient_id: ingredient.ingredient_id,
+                    ingredient_name: ingredient.ingredient_name,
+                    ingredient_name_zh: ingredient.ingredient_name_zh,
+                    aliases: ingredient.aliases || [],
+                    effects: ingredient.effects || [],
+                    original_text: ingredientText,
+                    confirmed: true
+                });
+                console.log("目前整理結果：", currentMatchResults);
+            } catch (error) {
+                console.error(`查詢 ${ingredientText} 失敗：`, error);
+            }
+        }
+
+        /* =================================================
+           8. 顯示結果
+        ================================================= */
+        if (currentMatchResults.length === 0) {
+            ingredientList.innerHTML = `
+                <p class="text-danger">
+                    找不到符合的成分。
+                    <br>
+                    請確認 OCR 辨識文字是否正確。
+                </p>
+            `;
+
+            viewResultButton.style.display = "none";
+            splitButton.disabled = false;
+            splitButton.innerText = "整理成分";
+
+            return;
+        }
+
+        currentMatchResults.forEach(function (ingredient) {
+            const item = document.createElement("div");
+            item.className = "ingredient-item";
+
+            const effects =
+                ingredient.effects.length > 0
+                    ? ingredient.effects.join("、")
+                    : "尚無功效資料";
+
+            item.innerHTML = `
+                <div class="ingredient-name">
+                    ${ingredient.ingredient_name}
+                    <span class="ingredient-zh">
+                        ${ingredient.ingredient_name_zh || "尚無中文名稱"}
+                    </span>
+                </div>
+
+                <div class="effect">
+                    功效：
+                    ${effects}
+                </div>
+
+                <div class="text-muted mt-2">
+                    OCR：
+                    ${ingredient.original_text}
+                </div>
+            `;
+
+            ingredientList.appendChild(item);
+        });
+
+        /* -------------------------------------------------
+           顯示查看分析結果按鈕
+        ------------------------------------------------- */
+        viewResultButton.style.display = "inline-block";
+        splitButton.disabled = false;
+        splitButton.innerText = "整理成分";
+    });
+
+    /* =========================================================
+       9. 查看分析結果
+
+       先把目前找到的成分存進 sessionStorage
+       再前往 Flask /results
+    ========================================================= */
+
+    viewResultButton.addEventListener("click", function () {
+        sessionStorage.setItem("ocrMatchResults", JSON.stringify(currentMatchResults));
+        window.location.href = "/results?source=ocr";
+    });
+    console.log("OCR TEST 999");
+</script>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>
